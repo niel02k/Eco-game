@@ -14,8 +14,8 @@ import { ParticleSystem } from "@babylonjs/core/Particles/particleSystem";
 import { Scene } from "@babylonjs/core/scene";
 
 export type GameMode = "booting" | "playing" | "paused" | "player-failed" | "level-complete";
-export type InputAction = "move-left" | "move-right" | "move-up" | "move-down" | "jump" | "interact" | "pause";
-export type FailureReason = "fell" | "jet" | "left-area";
+export type InputAction = "move-left" | "move-right" | "move-up" | "move-down" | "jump" | "spin" | "interact" | "pause";
+export type FailureReason = "fell" | "jet" | "obstacle" | "left-area";
 
 export interface GameSnapshot {
   mode: GameMode;
@@ -25,6 +25,10 @@ export interface GameSnapshot {
   checkpointActive: boolean;
   activeJet: number;
   totalJets: number;
+  checkpointNumber: number;
+  totalCheckpoints: number;
+  spinActive: boolean;
+  brokenObstacles: number;
   hint: string;
   playerStatus: string;
   reducedMotion: boolean;
@@ -65,6 +69,18 @@ type Jet = {
   particles: ParticleSystem;
   foam: ParticleSystem;
   active: boolean;
+};
+
+type Obstacle = {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  minZ: number;
+  maxZ: number;
+  mesh: Mesh;
+  breakable: boolean;
+  broken: boolean;
 };
 
 const palette = {
@@ -274,6 +290,9 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
   const engine = new Engine(canvas, true, { stencil: true, preserveDrawingBuffer: true, adaptToDeviceRatio: true });
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.48, 0.82, 0.9, 1);
+  scene.fogMode = Scene.FOGMODE_EXP2;
+  scene.fogDensity = 0.0065;
+  scene.fogColor = new Color3(0.48, 0.82, 0.9);
 
   const camera = new ArcRotateCamera("isometric-camera", -Math.PI / 4, 1.03, 23, new Vector3(0, 0, 0), scene);
   camera.lowerBetaLimit = 0.88;
@@ -297,6 +316,9 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
   const root = new TransformNode("level-01-root", scene);
   const staticColliders: BoxCollider[] = [];
   const jets: Jet[] = [];
+  const obstacles: Obstacle[] = [];
+  const checkpointRings: Mesh[] = [];
+  const checkpointOrbs: Mesh[] = [];
   const listeners = new Set<SnapshotListener>();
   const actions = new Set<InputAction>();
   const waterTexture = particleTexture(scene, "water-particle", "rgb(210, 250, 255)");
@@ -314,6 +336,13 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
   const platformMat = material(scene, "platform-material", new Color3(0.94, 0.68, 0.3));
   const coralMat = material(scene, "coral-material", palette.coral);
   const goalMat = material(scene, "water-point-material", palette.sun);
+  const obstacleMat = material(scene, "obstacle-material", new Color3(0.72, 0.39, 0.18));
+  const breakableMat = material(scene, "breakable-obstacle-material", palette.orange);
+  const checkpointInactiveMat = material(scene, "checkpoint-inactive-material", new Color3(0.25, 0.55, 0.62), 0.8);
+  const checkpointActiveMat = material(scene, "checkpoint-active-material", palette.sun, 0.95);
+  breakableMat.emissiveColor = new Color3(0.18, 0.06, 0.01);
+  checkpointActiveMat.emissiveColor = new Color3(0.28, 0.18, 0.03);
+  goalMat.emissiveColor = new Color3(0.22, 0.15, 0.03);
 
   const ground = MeshBuilder.CreateGround("level-ground", { width: 32, height: 9, subdivisions: 2 }, scene);
   ground.material = groundMat;
@@ -353,6 +382,45 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
   createPalm(scene, new Vector3(-6.2, 0, 3.25), 0.8).parent = root;
   createPalm(scene, new Vector3(11.8, 0, -3.25), 1.15).parent = root;
 
+  const createCheckpointBeacon = (name: string, position: Vector3) => {
+    const ring = MeshBuilder.CreateTorus(`${name}-ring`, { diameter: 1.45, thickness: 0.1, tessellation: 20 }, scene);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.copyFrom(position);
+    ring.position.y = 0.12;
+    ring.material = checkpointInactiveMat;
+    ring.parent = root;
+    checkpointRings.push(ring);
+    const orb = MeshBuilder.CreateSphere(`${name}-orb`, { diameter: 0.3, segments: 10 }, scene);
+    orb.position = position.add(new Vector3(0, 1.1, 0));
+    orb.material = checkpointInactiveMat;
+    orb.parent = root;
+    checkpointOrbs.push(orb);
+  };
+
+  createCheckpointBeacon("checkpoint-one", new Vector3(4.5, 0, 0));
+  createCheckpointBeacon("checkpoint-two", new Vector3(9.55, 0, 1.58));
+
+  const createObstacle = (name: string, position: Vector3, size: Vector3, breakable: boolean) => {
+    const mesh = MeshBuilder.CreateBox(name, { width: size.x, height: size.y, depth: size.z }, scene);
+    mesh.position = new Vector3(position.x, position.y + size.y / 2, position.z);
+    mesh.material = breakable ? breakableMat : obstacleMat;
+    mesh.parent = root;
+    obstacles.push({
+      minX: position.x - size.x / 2,
+      maxX: position.x + size.x / 2,
+      minY: position.y,
+      maxY: position.y + size.y,
+      minZ: position.z - size.z / 2,
+      maxZ: position.z + size.z / 2,
+      mesh,
+      breakable,
+      broken: false,
+    });
+  };
+
+  createObstacle("breakable-water-crate", new Vector3(1.8, 0, 0.35), new Vector3(1.15, 1.25, 1.15), true);
+  createObstacle("stone-gate-left", new Vector3(5.35, 0, -1.8), new Vector3(1.45, 1.1, 1.2), false);
+
   const sign = MeshBuilder.CreateBox("tutorial-sign", { width: 0.12, height: 1.2, depth: 0.12 }, scene);
   sign.position = new Vector3(-11.8, 0.6, 1.8);
   sign.material = material(scene, "sign-post", palette.deepBlue);
@@ -378,6 +446,9 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
   let failTimer = 0;
   let interactionHint = "Use A/D ou as setas para explorar";
   let lastJetCount = 0;
+  let spinTimer = 0;
+  let spinCooldown = 0;
+  let brokenObstacles = 0;
 
   const waterPoint = MeshBuilder.CreateCylinder("water-point", { diameter: 0.75, height: 0.14, tessellation: 24 }, scene);
   waterPoint.position = new Vector3(9.55, 0.62, 1.58);
@@ -425,8 +496,12 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
     checkpointActive,
     activeJet: lastJetCount,
     totalJets: jets.length,
+    checkpointNumber: waterPointActive ? 2 : checkpointActive ? 1 : 0,
+    totalCheckpoints: 2,
+    spinActive: spinTimer > 0,
+    brokenObstacles,
     hint: interactionHint,
-    playerStatus: grounded ? "pronto" : "no ar",
+    playerStatus: spinTimer > 0 ? "giro" : grounded ? "pronto" : "no ar",
     reducedMotion,
   });
 
@@ -446,6 +521,8 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
     playerVelocity.set(0, 0, 0);
     player.position.copyFrom(playerPosition);
     grounded = true;
+    spinTimer = 0;
+    spinCooldown = 0;
     failTimer = 0.65;
     interactionHint = reason === "jet" ? "O jato empurrou você. Tente pular no intervalo." : "Você voltou ao último checkpoint.";
     createSplash(scene, playerPosition.add(new Vector3(0, 0.05, 0)), waterTexture, reducedMotion);
@@ -473,6 +550,46 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
         next.y = box.maxY;
         playerVelocity.y = 0;
         grounded = true;
+      }
+    }
+  };
+
+  const collideWithObstacles = (next: Vector3, previous: Vector3) => {
+    for (const obstacle of obstacles) {
+      if (obstacle.broken) continue;
+      const horizontalOverlap = next.x + 0.46 > obstacle.minX && next.x - 0.46 < obstacle.maxX && next.z + 0.46 > obstacle.minZ && next.z - 0.46 < obstacle.maxZ;
+      if (!horizontalOverlap) continue;
+
+      const wasAbove = previous.y >= obstacle.maxY - 0.14;
+      if (playerVelocity.y <= 0 && next.y <= obstacle.maxY && wasAbove) {
+        next.y = obstacle.maxY;
+        playerVelocity.y = 0;
+        grounded = true;
+        continue;
+      }
+
+      if (spinTimer > 0 && obstacle.breakable && next.y < obstacle.maxY + 0.35) {
+        obstacle.broken = true;
+        obstacle.mesh.setEnabled(false);
+        brokenObstacles += 1;
+        playerVelocity.x = Math.max(playerVelocity.x, 3.8);
+        interactionHint = "Giro perfeito! A passagem está livre.";
+        createSplash(scene, obstacle.mesh.position.add(new Vector3(0, 0.35, 0)), foamTexture, reducedMotion);
+        emit();
+        continue;
+      }
+
+      if (next.y < obstacle.maxY) {
+        const penetrationX = Math.min(obstacle.maxX - (next.x - 0.46), (next.x + 0.46) - obstacle.minX);
+        const penetrationZ = Math.min(obstacle.maxZ - (next.z - 0.46), (next.z + 0.46) - obstacle.minZ);
+        if (penetrationX < penetrationZ) {
+          next.x = previous.x;
+          playerVelocity.x *= -0.18;
+        } else {
+          next.z = previous.z;
+          playerVelocity.z *= -0.18;
+        }
+        interactionHint = obstacle.breakable ? "A caixa laranja quebra com o Giro Cascudo (Q)." : "Desvie ou pule por cima do obstáculo.";
       }
     }
   };
@@ -526,6 +643,15 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
       createSplash(scene, playerPosition.add(new Vector3(0, 0.03, 0)), waterTexture, reducedMotion);
     }
 
+    if (actions.has("spin") && spinCooldown <= 0 && failTimer <= 0) {
+      spinTimer = 0.62;
+      spinCooldown = 0.78;
+      actions.delete("spin");
+      interactionHint = "Giro Cascudo! Quebre obstáculos laranja e avance.";
+      createSplash(scene, playerPosition.add(new Vector3(0, 0.35, 0)), foamTexture, reducedMotion);
+      emit();
+    }
+
     playerVelocity.y -= 16.5 * dt;
     playerVelocity.y = clamp(playerVelocity.y, -18, 10);
     const previous = playerPosition.clone();
@@ -540,12 +666,14 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
       grounded = false;
     }
     collideWithPlatforms(next, previous);
+    collideWithObstacles(next, previous);
     playerPosition.copyFrom(next);
     player.position.copyFrom(playerPosition);
 
     if (Math.abs(playerVelocity.x) > 0.08) {
       player.rotation.y = playerVelocity.x > 0 ? 0 : Math.PI;
     }
+    player.rotation.z = spinTimer > 0 ? elapsed * 24 : approach(player.rotation.z, 0, dt * 12);
     const bob = grounded && Math.abs(playerVelocity.x) > 0.3 ? Math.sin(elapsed * 12) * 0.035 : 0;
     player.position.y += bob;
 
@@ -583,6 +711,18 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
   const update = () => {
     const dt = Math.min(engine.getDeltaTime() / 1000, 0.05);
     elapsed += dt;
+    const wasSpinning = spinTimer > 0;
+    spinTimer = Math.max(0, spinTimer - dt);
+    spinCooldown = Math.max(0, spinCooldown - dt);
+    if (wasSpinning && spinTimer === 0) emit();
+    checkpointRings.forEach((ring, index) => {
+      const active = index < (waterPointActive ? 2 : checkpointActive ? 1 : 0);
+      ring.material = active ? checkpointActiveMat : checkpointInactiveMat;
+      ring.rotation.z += dt * (active ? 1.8 : 0.35);
+      ring.scaling.setAll(active ? 1 + Math.sin(elapsed * 4 + index) * 0.06 : 1);
+      checkpointOrbs[index].material = active ? checkpointActiveMat : checkpointInactiveMat;
+      checkpointOrbs[index].position.y = 1.1 + Math.sin(elapsed * 3 + index) * (active ? 0.13 : 0.05);
+    });
     updateJets();
     if (mode === "player-failed") {
       failTimer -= dt;
@@ -631,6 +771,13 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
       playerPosition.set(-14, 0, 0);
       playerVelocity.set(0, 0, 0);
       player.position.copyFrom(playerPosition);
+      spinTimer = 0;
+      spinCooldown = 0;
+      brokenObstacles = 0;
+      obstacles.forEach((obstacle) => {
+        obstacle.broken = false;
+        obstacle.mesh.setEnabled(true);
+      });
       waterPoint.material = goalMat;
       waterPointOrb.material = material(scene, "water-point-orb-reset", palette.aqua, 0.72);
       interactionHint = "Recomece observando os intervalos dos jatos.";
@@ -669,19 +816,34 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
     },
   };
 
-  // A deterministic demo path makes screenshot verification and quick review repeatable.
-  if (new URLSearchParams(window.location.search).has("demo")) {
+  // Deterministic demo paths make screenshot verification and quick review repeatable.
+  const demoMode = new URLSearchParams(window.location.search).get("demo");
+  if (demoMode) {
     runtime.start();
+    if (demoMode === "win") {
+      playerPosition.set(14.05, 0, 0);
+      player.position.copyFrom(playerPosition);
+      if (obstacles[0]) {
+        obstacles[0].broken = true;
+        obstacles[0].mesh.setEnabled(false);
+        brokenObstacles = 1;
+      }
+      checkpointActive = true;
+      activateWaterPoint();
+      interactionHint = "Fase concluída!";
+      setMode("level-complete");
+    }
     let demoTime = 0;
     const demo = () => {
       demoTime += 0.016;
-      if (mode !== "playing") return;
+      if (demoMode === "win" || mode !== "playing") return;
       const hold = (action: InputAction, active: boolean) => runtime.setAction(action, active);
       hold("move-right", demoTime < 3.85 || demoTime > 4.75);
       hold("move-up", demoTime >= 3.85 && demoTime < 4.2);
       hold("move-down", false);
       hold("jump", (demoTime > 1.1 && demoTime < 1.22) || (demoTime > 3.4 && demoTime < 3.52));
-      hold("interact", demoTime > 4.2 && demoTime < 4.55);
+      hold("spin", demoTime > 2.85 && demoTime < 3.45);
+      hold("interact", demoTime > 5.5 && demoTime < 5.9);
     };
     scene.onBeforeRenderObservable.add(demo);
   }

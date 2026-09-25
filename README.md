@@ -4,9 +4,9 @@ Primeiro vertical slice jogável de um jogo 3D de plataforma e exploração aqu�
 
 ## Estado atual
 
-A **Fase 1 — O Primeiro Jato** está implementada e jogável. O jogador controla uma tartaruga provisória em uma área tropical com piscina, três jatos, água texturizada, checkpoint, ponto de água e arco de saída.
+A **Fase 1 — O Primeiro Jato** está implementada e jogável. O jogador controla uma tartaruga provisória em uma área tropical com piscina, três jatos, obstáculos direcionais, caixa quebrável, dois checkpoints visuais, ponto de água e arco de saída.
 
-O slice inclui movimento, aceleração, pulo, gravidade, colisões simples, câmera isométrica, partículas de água, HUD, pausa, controles touch, salvamento estrutural para evolução futura e aviso de rotação em telas portrait.
+O slice inclui movimento em quatro direções no plano 3D, salto vertical, colisão resolvida por eixo, Giro Cascudo, quebra de obstáculos, checkpoints com respawn, câmera isométrica, partículas de água, neblina tropical, materiais emissivos, HUD, pausa, controles touch e tela de conclusão com estatísticas.
 
 A tartaruga e parte dos elementos visuais são procedurais e provisórios. A substituição pela mascote oficial depende de autorização e fornecimento dos assets do titular da marca.
 
@@ -24,7 +24,7 @@ pnpm check
 pnpm build
 ```
 
-A rota `/?demo` inicia a cena diretamente no modo de demonstração para inspeção visual automatizada.
+A rota `/?demo` inicia a cena diretamente no modo de demonstração para inspeção visual automatizada. A rota `/?demo=win` abre a conclusão determinística da fase para revisão visual.
 
 ## Deploy na Vercel
 
@@ -37,6 +37,7 @@ O repositório possui um `vercel.json` que força o deploy como aplicação Vite
 | Mover em 3D | `W/A/S/D` ou setas | Direcional com frente, trás, esquerda e direita |
 | Pular | Espaço | `PULAR` |
 | Interagir | `E` ou `Enter` | `ATIVAR` |
+| Giro Cascudo | `Q` | `GIRO` |
 | Pausar | `Esc` ou `P` | Botão no HUD |
 
 O jogo foi projetado prioritariamente para landscape. Em telas móveis no modo portrait, a experiência continua jogável com controles touch; o usuário recebe apenas uma recomendação visual para girar o dispositivo quando quiser uma composição mais ampla.
@@ -57,7 +58,7 @@ A documentação técnica está em:
 
 ## Pendências conhecidas
 
-A próxima etapa deve extrair o controlador de colisão para módulos próprios, implementar o Giro Cascudo e criar a Fase 2 com barreiras frágeis. Depois disso, o projeto pode avançar para Salto de Jato, Nado Rápido e a Praia com Ondas.
+A próxima etapa deve extrair o controlador de colisão para módulos próprios e criar a Fase 2 com novas barreiras. O Giro Cascudo já está reservado como habilidade-base da Fase 1; depois disso, o projeto pode avançar para Salto de Jato, Nado Rápido e a Praia com Ondas.
 
 O backend, login, multiplayer, loja, ranking, compras, personalização e demais sistemas fora do MVP continuam deliberadamente fora do escopo.
 

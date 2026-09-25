@@ -17,9 +17,11 @@ Game layer / runtime
     ├── InputAction
     ├── GameSnapshot
     ├── movimento e pulo
-    ├── colisão de plataforma
-    ├── checkpoints
-    ├── objetivo e vitória
+    ├── colisão resolvida por eixo
+    ├── obstáculos estáticos e quebráveis
+    ├── Giro Cascudo com cooldown
+    ├── checkpoints visuais e respawn
+    ├── objetivo, estatísticas e vitória
     └── sistema visual de jatos
 
 Babylon.js
@@ -41,11 +43,11 @@ O React recebe `GameSnapshot` e não consulta meshes, posições ou materiais da
 
 ## Movimento e colisões
 
-O primeiro slice usa um controlador cinemático leve. A posição é atualizada por velocidade horizontal, gravidade e forças dos jatos. O jogador possui um volume aproximado; a fase usa limites de arena e dois volumes simples de plataforma. O próximo incremento deve extrair esses comportamentos para `PlayerMotor`, `CollisionSystem` e `WaterSystem` sem alterar o contrato público.
+O primeiro slice usa um controlador cinemático leve. A posição é atualizada por velocidade nos eixos X/Z, gravidade e forças dos jatos. O jogador possui um volume aproximado; a fase usa limites de arena, plataformas e obstáculos com resolução por eixo, permitindo contornar pedras e quebrar caixas laranja durante o Giro Cascudo. O próximo incremento deve extrair esses comportamentos para `PlayerMotor`, `CollisionSystem` e `WaterSystem` sem alterar o contrato público.
 
 ## VFX
 
-As partículas dos jatos usam `ParticleSystem` com textura radial criada por `DynamicTexture`. O splash utiliza um emissor temporário. A próxima etapa deve extrair pooling e perfis de qualidade para `VfxManager`.
+As partículas dos jatos usam `ParticleSystem` com textura radial criada por `DynamicTexture`. O splash utiliza um emissor temporário. Checkpoints e objetivo usam materiais emissivos, torus, orbes pulsantes e neblina EXP2 para leitura de cena. A próxima etapa deve extrair pooling e perfis de qualidade para `VfxManager`.
 
 ## Landscape
 

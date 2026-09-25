@@ -12,6 +12,10 @@ const initialSnapshot: GameSnapshot = {
   checkpointActive: false,
   activeJet: 0,
   totalJets: 3,
+  checkpointNumber: 0,
+  totalCheckpoints: 2,
+  spinActive: false,
+  brokenObstacles: 0,
   hint: "Carregando a aventura...",
   playerStatus: "pronto",
   reducedMotion: false,
@@ -102,6 +106,11 @@ export default function GameCanvas() {
         P: "pause",
       };
       const action = keyMap[event.key];
+      if (event.key === "q" || event.key === "Q") {
+        event.preventDefault();
+        game.setAction("spin", true);
+        return;
+      }
       if (!action) return;
       event.preventDefault();
       game.setAction(action, true);
@@ -129,6 +138,10 @@ export default function GameCanvas() {
         P: "pause",
       };
       const action = keyMap[event.key];
+      if (event.key === "q" || event.key === "Q") {
+        game.setAction("spin", false);
+        return;
+      }
       if (action) game.setAction(action, false);
     };
     window.addEventListener("keydown", onKeyDown, { passive: false });
@@ -183,6 +196,9 @@ export default function GameCanvas() {
           <span className={snapshot.waterPointActive ? "status-chip active" : "status-chip"}>
             {snapshot.waterPointActive ? "● ÁGUA RESTAURADA" : "○ PONTO DE ÁGUA"}
           </span>
+          <span className={snapshot.spinActive ? "status-chip active" : "status-chip"}>
+            {snapshot.spinActive ? "✦ GIRO CASCUDO" : "Q GIRO CASCUDO"}
+          </span>
         </div>
         <button className="pause-button" onClick={togglePause} aria-label="Pausar ou continuar">
           {snapshot.mode === "paused" ? "▶" : "Ⅱ"}
@@ -227,6 +243,7 @@ export default function GameCanvas() {
               <span><b>01</b><small>Mova-se em 4 direções com WASD ou o direcional</small></span>
               <span><b>02</b><small>Pule com espaço ou PULAR</small></span>
               <span><b>03</b><small>Use E ou ATIVAR no ponto dourado</small></span>
+              <span><b>04</b><small>Use Q ou GIRO para quebrar caixas laranja</small></span>
             </div>
             <button className="primary-button" onClick={begin}>COMEÇAR A AVENTURA <span>→</span></button>
             <p className="microcopy">Feito para jogar na horizontal · sem combate · falhas retornam ao checkpoint</p>
@@ -253,6 +270,11 @@ export default function GameCanvas() {
             <h2>O parque voltou a respirar!</h2>
             <p>Você atravessou o Primeiro Jato e reativou a primeira fonte de água.</p>
             <div className="victory-stat"><span>FASE 01</span><strong>CONCLUÍDA</strong></div>
+            <div className="victory-grid">
+              <span><strong>{snapshot.checkpointNumber}/{snapshot.totalCheckpoints}</strong><small>CHECKPOINTS</small></span>
+              <span><strong>{snapshot.brokenObstacles}</strong><small>OBSTÁCULOS</small></span>
+              <span><strong>{snapshot.activeJet}/{snapshot.totalJets}</strong><small>JATOS VISÍVEIS</small></span>
+            </div>
             <button className="primary-button" onClick={() => runtime?.restart()}>JOGAR NOVAMENTE <span>↻</span></button>
           </section>
         </div>
