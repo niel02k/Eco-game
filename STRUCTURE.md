@@ -49,4 +49,4 @@ As partículas dos jatos usam `ParticleSystem` com textura radial criada por `Dy
 
 ## Landscape
 
-O layout e a câmera são projetados para landscape. Em viewport estreito com portrait, o runtime é pausado e React mostra o overlay de rotação. O canvas usa `viewport-fit=cover` e os controles touch ocupam os cantos inferiores.
+O layout e a câmera são projetados prioritariamente para landscape. Em portrait, o runtime continua jogável e React mostra apenas uma recomendação discreta para girar o dispositivo. O canvas usa `viewport-fit=cover` e os controles touch ocupam os cantos inferiores.

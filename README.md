@@ -39,7 +39,7 @@ O repositório possui um `vercel.json` que força o deploy como aplicação Vite
 | Interagir | `E` ou `Enter` | `ATIVAR` |
 | Pausar | `Esc` ou `P` | Botão no HUD |
 
-O jogo foi projetado para landscape. Em telas móveis no modo portrait, a simulação é pausada e o jogador recebe instruções para girar o dispositivo.
+O jogo foi projetado prioritariamente para landscape. Em telas móveis no modo portrait, a experiência continua jogável com controles touch; o usuário recebe apenas uma recomendação visual para girar o dispositivo quando quiser uma composição mais ampla.
 
 ## Arquitetura
 

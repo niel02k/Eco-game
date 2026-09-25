@@ -24,7 +24,8 @@ function useLandscapeGuard(runtime: GameRuntime | null) {
     const update = () => {
       const next = window.matchMedia("(orientation: portrait)").matches && window.innerWidth < 900;
       setPortrait(next);
-      runtime?.setPausedByOrientation(next);
+      // Landscape remains the preferred composition, but portrait must stay playable on phones.
+      runtime?.setPausedByOrientation(false);
     };
     update();
     window.addEventListener("resize", update);
@@ -255,14 +256,9 @@ export default function GameCanvas() {
         </div>
       )}
 
-      {portrait && (
-        <div className="orientation-overlay">
-          <div className="orientation-card">
-            <div className="rotate-icon">↻</div>
-            <span className="intro-kicker">MODO HORIZONTAL</span>
-            <h2>Gire o dispositivo</h2>
-            <p>Esta aventura foi desenhada para telas na horizontal.</p>
-          </div>
+      {portrait && !showHelp && snapshot.mode !== "level-complete" && (
+        <div className="orientation-hint" role="status">
+          <span>↔</span> Melhor em horizontal, mas você já pode jogar aqui.
         </div>
       )}
 

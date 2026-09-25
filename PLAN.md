@@ -17,7 +17,7 @@ Entregar uma primeira fase horizontal e jogável no navegador: **O Primeiro Jato
 - Ponto de água com ativação por `E` ou botão touch.
 - Condição de vitória e reinício.
 - HUD em português e controles para teclado/toque.
-- Pausa, modo retrato com bloqueio visual e redução de movimento.
+- Pausa, modo retrato jogável com recomendação visual e redução de movimento.
 - Rota `?demo` para validação determinística.
 
 ## Critérios de aceite
@@ -31,7 +31,7 @@ Entregar uma primeira fase horizontal e jogável no navegador: **O Primeiro Jato
 7. O HUD informa objetivo, checkpoint e estado da água.
 8. O botão `?` reabre as instruções.
 9. A tecla Escape ou P pausa o jogo.
-10. O jogo mostra aviso e pausa em retrato em telas menores.
+10. O jogo continua jogável em retrato em telas menores e mostra apenas uma recomendação visual para landscape.
 11. `pnpm check` e `pnpm build` passam.
 12. A cena é descartada sem listeners duplicados.
 
