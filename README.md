@@ -26,6 +26,10 @@ pnpm build
 
 A rota `/?demo` inicia a cena diretamente no modo de demonstração para inspeção visual automatizada.
 
+## Deploy na Vercel
+
+O repositório possui um `vercel.json` que força o deploy como aplicação Vite estática. A configuração usa `pnpm run build:web` e publica `dist/public`. No painel da Vercel, selecione o repositório `niel02k/Eco-game`, mantenha a raiz do projeto em `/` e deixe a configuração do `vercel.json` prevalecer. Não use `server/index.ts` como entrada e não configure o projeto como uma função Node.
+
 ## Controles
 
 | Ação | Teclado | Touch |
