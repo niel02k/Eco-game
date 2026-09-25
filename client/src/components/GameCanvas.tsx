@@ -199,15 +199,17 @@ export default function GameCanvas() {
       </div>
 
       <section className="controls-hint" aria-label="Controles">
-        <span><kbd>A</kbd><kbd>D</kbd> mover</span>
+        <span><kbd>WASD</kbd> mover em 3D</span>
         <span><kbd>ESPAÇO</kbd> pular</span>
         <span><kbd>E</kbd> interagir</span>
       </section>
 
       <section className="touch-controls" aria-label="Controles de toque">
         <div className="touch-dpad">
+          <TouchButton action="move-up" label="▲" runtime={runtime} />
           <TouchButton action="move-left" label="◀" runtime={runtime} />
           <TouchButton action="move-right" label="▶" runtime={runtime} />
+          <TouchButton action="move-down" label="▼" runtime={runtime} />
         </div>
         <div className="touch-actions">
           <TouchButton action="jump" label="PULAR" runtime={runtime} />
@@ -222,7 +224,7 @@ export default function GameCanvas() {
             <h1>O Primeiro Jato</h1>
             <p>A tartaruga precisa reativar o ponto de água do parque. Atravesse os jatos, chegue ao cais e abra o arco de saída.</p>
             <div className="intro-grid">
-              <span><b>01</b><small>Mova-se com A/D ou ◀ ▶</small></span>
+              <span><b>01</b><small>Mova-se em 4 direções com WASD ou o direcional</small></span>
               <span><b>02</b><small>Pule com espaço ou PULAR</small></span>
               <span><b>03</b><small>Use E ou ATIVAR no ponto dourado</small></span>
             </div>

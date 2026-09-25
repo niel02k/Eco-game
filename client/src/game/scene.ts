@@ -676,11 +676,12 @@ export function createGameScene(canvas: HTMLCanvasElement): GameRuntime {
     const demo = () => {
       demoTime += 0.016;
       if (mode !== "playing") return;
-      runtime.setAction("move-right", true);
-      if (demoTime > 1.1 && demoTime < 1.22) runtime.setAction("jump", true);
-      if (demoTime > 3.4 && demoTime < 3.52) runtime.setAction("jump", true);
-      if (demoTime > 7.1 && demoTime < 7.3) runtime.setAction("interact", true);
-      if (demoTime > 7.45) runtime.setAction("move-right", true);
+      const hold = (action: InputAction, active: boolean) => runtime.setAction(action, active);
+      hold("move-right", demoTime < 3.85 || demoTime > 4.75);
+      hold("move-up", demoTime >= 3.85 && demoTime < 4.2);
+      hold("move-down", false);
+      hold("jump", (demoTime > 1.1 && demoTime < 1.22) || (demoTime > 3.4 && demoTime < 3.52));
+      hold("interact", demoTime > 4.2 && demoTime < 4.55);
     };
     scene.onBeforeRenderObservable.add(demo);
   }

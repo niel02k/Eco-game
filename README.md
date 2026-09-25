@@ -34,7 +34,7 @@ O repositório possui um `vercel.json` que força o deploy como aplicação Vite
 
 | Ação | Teclado | Touch |
 |---|---|---|
-| Mover | `A/D` ou setas | Botões direcionais |
+| Mover em 3D | `W/A/S/D` ou setas | Direcional com frente, trás, esquerda e direita |
 | Pular | Espaço | `PULAR` |
 | Interagir | `E` ou `Enter` | `ATIVAR` |
 | Pausar | `Esc` ou `P` | Botão no HUD |
